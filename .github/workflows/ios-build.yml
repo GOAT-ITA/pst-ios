@@ -1,0 +1,41 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Questo ti permette di avviarlo anche a mano
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Xcode version
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+
+    - name: Build Xcode Project
+      run: |
+        xcodebuild -project "pst1 (mobile test ios).xcodeproj" \
+                   -scheme "pst1 (mobile test ios)" \
+                   -sdk iphoneos \
+                   -configuration Release \
+                   CODE_SIGNING_ALLOWED=NO \
+                   CODE_SIGNING_REQUIRED=NO \
+                   clean build
+
+    - name: Create IPA Package
+      run: |
+        mkdir -p Payload
+        mv build/Release-iphoneos/*.app Payload/ 2>/dev/null || mv build/ios/build/Release-iphoneos/*.app Payload/ 2>/dev/null || mv ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/*.app Payload/
+        zip -r gioco_ios.ipa Payload
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-game-ipa
+        path: gioco_ios.ipa

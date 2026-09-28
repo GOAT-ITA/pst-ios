@@ -3,7 +3,7 @@ name: Build iOS IPA
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Questo ti permette di avviarlo anche a mano
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,6 +12,20 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Download and Restore Godot XCFrameworks
+      run: |
+        # Scarica i template di esportazione ufficiali di Godot 4.6
+        curl -L -o templates.tpz https://github.com
+        unzip templates.tpz
+        
+        # Estrae solo le librerie iOS necessarie e le rimette al posto giusto
+        unzip templates/ios.zip
+        mkdir -p "pst1 (mobile test ios).xcframework"
+        cp -r ios_xcode/godot.xcframework/* "pst1 (mobile test ios).xcframework/"
+        
+        # Pulisce i file temporanei per non sprecare spazio
+        rm -rf templates templates.tpz ios_xcode
 
     - name: Set up Xcode version
       uses: maxim-lobanov/setup-xcode@v1

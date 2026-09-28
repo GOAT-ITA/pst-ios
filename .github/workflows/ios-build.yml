@@ -13,31 +13,34 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download and Restore Godot XCFrameworks
+    - name: Download Godot and Export Templates
       run: |
-        # Crea la cartella per la libreria mancante
-        mkdir -p "pst1 (mobile test ios).xcframework"
+        # Scarica l'editor di Godot per macOS
+        curl -L -o Godot.zip https://github.com
+        unzip Godot.zip
+        mv Godot.app /Applications/Godot.app
+
+        # Crea la cartella ufficiale dei template di Godot su macOS
+        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.6.stable
         
-        # Scarica direttamente la libreria statica di Godot ufficiale da una repository di release specchio o curl mirato
-        # Per massima stabilità, scarichiamo l'eseguibile precompilato ufficiale da GitHub Releases
-        curl -L -o godot_ios.zip https://github.com
-        
-        # Usiamo python, già integrato nel Mac di GitHub, che estrae i file zip / tpz senza fare storie sul formato
-        python3 -c "import zipfile; zipfile.ZipFile('godot_ios.zip').extractall('templates_extracted')"
-        
-        # Estrae il sotto-archivio di iOS sempre usando python
-        python3 -c "import zipfile; zipfile.ZipFile('templates_extracted/templates/ios.zip').extractall('ios_extracted')"
-        
-        # Sposta i file della libreria dentro il tuo progetto Xcode
-        cp -r ios_extracted/ios_xcode/godot.xcframework/* "pst1 (mobile test ios).xcframework/"
-        
-        # Pulisce i file temporanei
-        rm -rf godot_ios.zip templates_extracted ios_extracted
+        # Scarica i template ufficiali e li posiziona dove l'editor li aspetta
+        curl -L -o ~/Library/Application\ Support/Godot/export_templates/4.6.stable/ios.zip https://github.com
 
     - name: Set up Xcode version
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: 'latest-stable'
+
+    - name: Restore Frameworks via Godot
+      run: |
+        # Forza Godot a rigenerare la cartella .xcframework mancante usando i template ufficiali appena scaricati
+        mkdir -p "pst1 (mobile test ios).xcframework"
+        unzip -j ~/Library/Application\ Support/Godot/export_templates/4.6.stable/ios.zip "ios_xcode/godot.xcframework/*" -d "pst1 (mobile test ios).xcframework/" || true
+        
+        # Se il comando sopra fallisce per via delle sottocartelle, estraiamo l'intero pacchetto e copiamo i file strutturati
+        unzip ~/Library/Application\ Support/Godot/export_templates/4.6.stable/ios.zip -d godot_templt_extracted
+        cp -r godot_templt_extracted/ios_xcode/godot.xcframework/* "pst1 (mobile test ios).xcframework/" || true
+        rm -rf godot_templt_extracted
 
     - name: Build Xcode Project
       run: |
